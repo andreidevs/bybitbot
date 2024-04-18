@@ -1,10 +1,16 @@
 import 'dotenv/config'
-import {Bot, GrammyError, HttpError, InlineKeyboard} from 'grammy'
+import {Bot, GrammyError, HttpError, InlineKeyboard, session} from 'grammy'
 import {hydrate} from '@grammyjs/hydrate'
 import {getKztUsdtRate, getRubUsdtRate} from './bybitAPI.js'
+import cron from 'node-cron'
 
 
 const bot = new Bot(process.env.BOT_API_KEY)
+
+function initial() {
+    return { usersIds: [] };
+}
+bot.use(session({ initial }));
 
 bot.use(hydrate());
 
@@ -13,6 +19,7 @@ const menuKeyboard = new InlineKeyboard()
     .text('P2P Курс продажи (USDT/KZT)', 'sell_kzt_rate');
 
 const backKeyboard = new InlineKeyboard().text('< Назад в меню', 'back');
+
 
 bot.command('start', async (ctx) => {
     await ctx.reply('Выберите действие', {
@@ -54,5 +61,16 @@ bot.catch(({ctx, error}) => {
         console.error("Cloud not contct telegram:", error)
     }
 })
+
+cron.schedule('* * * * *', async () => {
+   await getAllRates()
+});
+
+async function getAllRates (){
+    const kzt = await getKztUsdtRate()
+    const rub = await getRubUsdtRate()
+
+    await bot.api.sendMessage(912716785, `Курсы P2P: \nПокупка: ${rub} \nПродажа: ${kzt}`);
+}
 
 bot.start()
