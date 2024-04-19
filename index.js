@@ -62,7 +62,7 @@ bot.catch(({ctx, error}) => {
     }
 })
 
-cron.schedule('* * * * *', async () => {
+cron.schedule('*/5  * * * *', async () => {
    await getAllRates()
 });
 
